@@ -21,6 +21,13 @@ class Account(models.Model):
     initial_balance = models.BigIntegerField(default=0)  # تومان
     is_archived = models.BooleanField(default=False)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "name"], name="unique_account_name_per_user"
+            ),
+        ]
+
     def __str__(self):
         return self.name
 
@@ -76,6 +83,15 @@ class Category(models.Model):
     name_en = models.CharField(max_length=60, blank=True)
     kind = models.CharField(max_length=7, choices=Kind.choices)
     icon = models.CharField(max_length=40, blank=True)
+    is_archived = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "name_fa", "kind"],
+                name="unique_category_name_per_user_and_kind",
+            ),
+        ]
 
     def __str__(self):
         return self.name_fa
