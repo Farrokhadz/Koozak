@@ -22,3 +22,8 @@ export function verifyOtp(identifier, code) {
 export function getCurrentUser() {
   return apiRequest(`${AUTH_BASE}/me/`);
 }
+
+/** Ends the session on the server (apiRequest adds the CSRF header). */
+export function logout() {
+  return apiRequest(`${AUTH_BASE}/logout/`, { method: "POST" });
+}

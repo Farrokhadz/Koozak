@@ -5,7 +5,7 @@ export default function LoginPage({ onLogin }) {
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-primary">کوژک</h1>
+          <h1 className="text-4xl font-bold text-primary">کوزک</h1>
           <p className="mt-2 text-sm text-text/70">مدیریت مالی شخصی</p>
           <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-accent" />
         </header>
