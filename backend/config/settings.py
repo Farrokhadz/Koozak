@@ -116,6 +116,13 @@ DATABASES = {
     }
 }
 
+# Production (Vercel): the filesystem is read-only, so SQLite can't be used.
+# Set DATABASE_URL to a hosted Postgres (e.g. postgres://user:pass@host/db).
+if os.environ.get('DATABASE_URL'):
+    import dj_database_url
+
+    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
