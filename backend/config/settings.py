@@ -33,6 +33,25 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
 
+# Vercel exposes the deployment's host names as system env vars. The frontend
+# and the API share one domain there, so these hosts must be accepted.
+VERCEL_HOSTS = [
+    h
+    for h in (
+        os.environ.get('VERCEL_URL'),
+        os.environ.get('VERCEL_BRANCH_URL'),
+        os.environ.get('VERCEL_PROJECT_PRODUCTION_URL'),
+    )
+    if h
+]
+ALLOWED_HOSTS += VERCEL_HOSTS
+
+if os.environ.get('VERCEL'):
+    # Vercel terminates TLS in front of Django.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 
 # Application definition
 
@@ -160,4 +179,10 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
+]
+# Deployed origins: Vercel's own hosts, plus any custom domain listed (full
+# origins, comma separated) in DJANGO_CSRF_TRUSTED_ORIGINS.
+CSRF_TRUSTED_ORIGINS += [f"https://{host}" for host in VERCEL_HOSTS]
+CSRF_TRUSTED_ORIGINS += [
+    o for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o
 ]
