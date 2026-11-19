@@ -1,14 +1,18 @@
+// Empty = same origin. In development Vite proxies /api to Django (see
+// vite.config.js), which avoids CORS and CSRF-origin problems. In production,
+// set VITE_API_BASE_URL only if the API lives on a different origin.
 const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+  import.meta.env.VITE_API_BASE_URL ?? ""
 ).replace(/\/$/, "");
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -17,6 +21,23 @@ function getCookie(name) {
     .split("; ")
     .find((row) => row.startsWith(`${name}=`));
   return match ? decodeURIComponent(match.split("=")[1]) : null;
+}
+
+/** Flattens the different error shapes DRF / our views return into one string. */
+function extractMessage(data) {
+  if (!data) return null;
+  if (typeof data === "string") return data;
+  if (Array.isArray(data)) {
+    return data.map(extractMessage).filter(Boolean).join(" ") || null;
+  }
+  if (typeof data === "object") {
+    if (data.error) return extractMessage(data.error);
+    if (data.detail) return extractMessage(data.detail);
+    return (
+      Object.values(data).map(extractMessage).filter(Boolean).join(" ") || null
+    );
+  }
+  return null;
 }
 
 /**
@@ -60,10 +81,13 @@ export async function apiRequest(path, { method = "GET", body } = {}) {
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      data?.error ?? data?.detail ?? "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
-      response.status,
-    );
+    const raw = extractMessage(data);
+    let message = raw ?? "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.";
+    if (response.status === 403 && /csrf/i.test(raw ?? "")) {
+      message =
+        "درخواست توسط سرور رد شد (خطای CSRF). تنظیم CSRF_TRUSTED_ORIGINS در بک‌اند را بررسی کنید.";
+    }
+    throw new ApiError(message, response.status, data);
   }
 
   return data;
