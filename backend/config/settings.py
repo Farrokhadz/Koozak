@@ -154,3 +154,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# با SessionAuthentication، درخواست‌های POST/PATCH/DELETE بعد از ورود به CSRF
+# نیاز دارن؛ Django هم Origin فرانت رو باید به‌عنوان مبدأ مجاز بشناسه.
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
