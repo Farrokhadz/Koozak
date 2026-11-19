@@ -4,6 +4,7 @@ import AccountFormModal from "../components/dashboard/AccountFormModal.jsx";
 import TransactionFormModal from "../components/dashboard/TransactionFormModal.jsx";
 import TransactionList from "../components/dashboard/TransactionList.jsx";
 import Money from "../components/ui/Money.jsx";
+import InstallAppButton from "../components/ui/InstallAppButton.jsx";
 import { primaryButton, secondaryButton } from "../components/ui/styles.js";
 import {
   listAccounts,
@@ -87,6 +88,7 @@ export default function DashboardPage({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <InstallAppButton />
             <button
               type="button"
               onClick={onLogout}
