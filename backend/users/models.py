@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -5,6 +7,7 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -77,7 +80,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class OTPCode(models.Model):
-    identifier = models.CharField(max_length=254)  # شماره موبایل یا ایمیل
+    CODE_LENGTH = 5
+    TTL_MINUTES = 3
+    MAX_ATTEMPTS = 3
+
+    identifier = models.CharField(max_length=254, unique=True)  # شماره موبایل یا ایمیل
     code_hash = models.CharField(max_length=128)
     expires_at = models.DateTimeField()
     attempts = models.PositiveSmallIntegerField(default=0)
@@ -91,3 +98,11 @@ class OTPCode(models.Model):
 
     def __str__(self):
         return f"OTP for {self.identifier}"
+
+    @classmethod
+    def generate_code(cls):
+        """کد عددی تصادفی (با secrets) به طول CODE_LENGTH؛ مثلاً «04821»."""
+        return f"{secrets.randbelow(10**cls.CODE_LENGTH):0{cls.CODE_LENGTH}d}"
+
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
