@@ -24,6 +24,10 @@ export function getCurrentUser() {
 }
 
 /** Ends the session on the server (apiRequest adds the CSRF header). */
-export function logout() {
-  return apiRequest(`${AUTH_BASE}/logout/`, { method: "POST" });
+export async function logout() {
+  await apiRequest(`${AUTH_BASE}/logout/`, { method: "POST" });
+  // Don't leave this user's offline copy of the API data on the device.
+  if ("caches" in window) {
+    await caches.delete("koozak-api").catch(() => {});
+  }
 }
