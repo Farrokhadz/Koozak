@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,6 +12,7 @@ from finance.serializers import (
     CategorySerializer,
     TransactionSerializer,
 )
+from finance.services import ensure_sufficient_funds
 
 
 class IsOwner(permissions.BasePermission):
@@ -64,3 +66,24 @@ class TransactionViewSet(OwnedModelViewSet):
     serializer_class = TransactionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = TransactionFilter
+
+    # An account balance may never go below zero. Each write runs the check and
+    # the save in one DB transaction so the locked balance can't change between
+    # them.
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            ensure_sufficient_funds(None, serializer.build_candidate())
+            serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        with transaction.atomic():
+            stored = Transaction.objects.select_for_update().get(
+                pk=serializer.instance.pk
+            )
+            ensure_sufficient_funds(stored, serializer.build_candidate())
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        with transaction.atomic():
+            ensure_sufficient_funds(instance, None)
+            super().perform_destroy(instance)

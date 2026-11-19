@@ -95,6 +95,10 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise _as_serializer_error(exc) from exc
         return attrs
 
+    def build_candidate(self):
+        """The unsaved Transaction this validated request would produce."""
+        return self._candidate(self.validated_data)
+
     def _candidate(self, attrs):
         user = self.context["request"].user
         if self.instance is None:
