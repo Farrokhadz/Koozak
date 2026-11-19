@@ -158,3 +158,160 @@ class FinanceApiTests(APITestCase):
         self.client.force_authenticate(None)
         response = self.client.get(reverse("account-list"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class InsufficientFundsTests(APITestCase):
+    """An account balance may never go below zero."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(phone="09120000011")
+        self.client.force_authenticate(self.user)
+
+        self.cash = Account.objects.create(
+            user=self.user, name="Cash", type=Account.Type.CASH, initial_balance=1000
+        )
+        self.card = Account.objects.create(
+            user=self.user, name="Card", type=Account.Type.BANK_CARD
+        )
+        self.expense_cat = Category.objects.create(
+            user=self.user, name_fa="Food", kind=Category.Kind.EXPENSE
+        )
+        self.income_cat = Category.objects.create(
+            user=self.user, name_fa="Salary", kind=Category.Kind.INCOME
+        )
+
+    def _expense(self, amount, fee=0, account=None):
+        return self.client.post(
+            reverse("transaction-list"),
+            {
+                "type": Transaction.Type.EXPENSE,
+                "account": (account or self.cash).id,
+                "category": self.expense_cat.id,
+                "amount": amount,
+                "fee": fee,
+                "date": "2026-11-19",
+            },
+            format="json",
+        )
+
+    def _income(self, amount, account=None):
+        return self.client.post(
+            reverse("transaction-list"),
+            {
+                "type": Transaction.Type.INCOME,
+                "account": (account or self.cash).id,
+                "category": self.income_cat.id,
+                "amount": amount,
+                "date": "2026-11-19",
+            },
+            format="json",
+        )
+
+    def _transfer(self, amount, fee=0):
+        return self.client.post(
+            reverse("transaction-list"),
+            {
+                "type": Transaction.Type.TRANSFER,
+                "account": self.cash.id,
+                "to_account": self.card.id,
+                "amount": amount,
+                "fee": fee,
+                "date": "2026-11-19",
+            },
+            format="json",
+        )
+
+    def test_expense_above_balance_is_rejected_and_not_saved(self):
+        response = self._expense(1001)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("amount", response.data)
+        self.assertEqual(Transaction.objects.count(), 0)
+        self.assertEqual(self.cash.balance, 1000)
+
+    def test_expense_equal_to_balance_is_allowed(self):
+        response = self._expense(1000)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.cash.balance, 0)
+
+    def test_fee_counts_toward_the_balance(self):
+        response = self._expense(990, fee=20)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.cash.balance, 1000)
+
+    def test_transfer_above_source_balance_is_rejected(self):
+        response = self._transfer(1500)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Transaction.objects.count(), 0)
+        self.assertEqual(self.cash.balance, 1000)
+        self.assertEqual(self.card.balance, 0)
+
+    def test_transfer_fee_counts_toward_the_source_balance(self):
+        response = self._transfer(900, fee=200)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.cash.balance, 1000)
+
+    def test_valid_transfer_moves_money(self):
+        response = self._transfer(400, fee=100)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.cash.balance, 500)
+        self.assertEqual(self.card.balance, 400)
+
+    def test_income_is_never_blocked_and_funds_later_spending(self):
+        self.assertEqual(self._income(500, account=self.card).status_code, 201)
+
+        response = self._expense(500, account=self.card)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.card.balance, 0)
+
+    def test_raising_an_expense_above_balance_is_rejected(self):
+        created = self._expense(600)
+        url = reverse("transaction-detail", args=[created.data["id"]])
+
+        response = self.client.patch(url, {"amount": 1200}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Transaction.objects.get(pk=created.data["id"]).amount, 600)
+        self.assertEqual(self.cash.balance, 400)
+
+    def test_editing_only_the_note_is_allowed(self):
+        created = self._expense(1000)  # balance is now exactly zero
+        url = reverse("transaction-detail", args=[created.data["id"]])
+
+        response = self.client.patch(url, {"note": "lunch"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_moving_an_expense_to_a_poorer_account_is_rejected(self):
+        created = self._expense(600)
+        url = reverse("transaction-detail", args=[created.data["id"]])
+
+        response = self.client.patch(url, {"account": self.card.id}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.cash.balance, 400)
+
+    def test_deleting_income_that_funds_spending_is_rejected(self):
+        income = self._income(500, account=self.card)
+        self._expense(500, account=self.card)
+        url = reverse("transaction-detail", args=[income.data["id"]])
+
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Transaction.objects.filter(pk=income.data["id"]).exists())
+
+    def test_deleting_an_expense_is_allowed(self):
+        created = self._expense(600)
+        url = reverse("transaction-detail", args=[created.data["id"]])
+
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(self.cash.balance, 1000)
