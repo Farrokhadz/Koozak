@@ -1,7 +1,9 @@
 import Money from "../ui/Money.jsx";
+import { ArchiveIcon, EditIcon, TrashIcon } from "../ui/icons.jsx";
+import { iconButton, iconButtonDanger } from "../ui/styles.js";
 import { ACCOUNT_TYPES } from "../../utils/finance.js";
 
-export default function AccountCard({ account }) {
+export default function AccountCard({ account, onEdit, onArchive, onDelete }) {
   const typeLabel = ACCOUNT_TYPES[account.type]?.label ?? account.type;
 
   return (
@@ -20,6 +22,33 @@ export default function AccountCard({ account }) {
           account.balance < 0 ? "text-red-600" : "text-text"
         }`}
       />
+
+      <div className="-mb-2 -ms-2 mt-3 flex">
+        <button
+          type="button"
+          onClick={() => onEdit(account)}
+          aria-label={`ویرایش حساب ${account.name}`}
+          className={iconButton}
+        >
+          <EditIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => onArchive(account)}
+          aria-label={`آرشیو حساب ${account.name}`}
+          className={iconButton}
+        >
+          <ArchiveIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(account)}
+          aria-label={`حذف حساب ${account.name}`}
+          className={iconButtonDanger}
+        >
+          <TrashIcon />
+        </button>
+      </div>
     </article>
   );
 }

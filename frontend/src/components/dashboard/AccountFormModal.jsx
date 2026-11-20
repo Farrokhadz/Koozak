@@ -2,15 +2,23 @@ import { useState } from "react";
 import Modal from "../ui/Modal.jsx";
 import MoneyInput from "../ui/MoneyInput.jsx";
 import { inputClass, labelClass, primaryButton } from "../ui/styles.js";
-import { createAccount } from "../../services/financeService.js";
+import { createAccount, updateAccount } from "../../services/financeService.js";
 import { ACCOUNT_TYPES } from "../../utils/finance.js";
 
 const cleanName = (value) => value.replace(/\s+/g, " ").trim();
 
-export default function AccountFormModal({ accounts, onClose, onCreated }) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("bank_card");
-  const [initialBalance, setInitialBalance] = useState("");
+export default function AccountFormModal({
+  account, // the account being edited; omit to create a new one
+  accounts,
+  onClose,
+  onSaved,
+}) {
+  const isEditing = Boolean(account);
+  const [name, setName] = useState(account?.name ?? "");
+  const [type, setType] = useState(account?.type ?? "bank_card");
+  const [initialBalance, setInitialBalance] = useState(
+    account ? String(account.initial_balance) : "",
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +37,11 @@ export default function AccountFormModal({ accounts, onClose, onCreated }) {
     }
     // The backend answers a duplicate name with a 500, so check it here.
     // Archived accounts count too: the database constraint covers them.
-    if (accounts.some((account) => account.name === trimmed)) {
+    if (
+      accounts.some(
+        (other) => other.id !== account?.id && other.name === trimmed,
+      )
+    ) {
       setError("حسابی با این نام از قبل وجود دارد.");
       return;
     }
@@ -37,12 +49,14 @@ export default function AccountFormModal({ accounts, onClose, onCreated }) {
     setLoading(true);
     setError("");
     try {
-      await createAccount({
+      const payload = {
         name: trimmed,
         type,
         initial_balance: Number(initialBalance || 0),
-      });
-      onCreated();
+      };
+      if (isEditing) await updateAccount(account.id, payload);
+      else await createAccount(payload);
+      onSaved();
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -50,7 +64,7 @@ export default function AccountFormModal({ accounts, onClose, onCreated }) {
   };
 
   return (
-    <Modal title="حساب جدید" onClose={onClose}>
+    <Modal title={isEditing ? "ویرایش حساب" : "حساب جدید"} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="account-name" className={labelClass}>
@@ -116,7 +130,11 @@ export default function AccountFormModal({ accounts, onClose, onCreated }) {
         ) : null}
 
         <button type="submit" disabled={loading} className={`${primaryButton} w-full`}>
-          {loading ? "در حال ذخیره..." : "ذخیره حساب"}
+          {loading
+            ? "در حال ذخیره..."
+            : isEditing
+              ? "ذخیره تغییرات"
+              : "ذخیره حساب"}
         </button>
       </form>
     </Modal>
