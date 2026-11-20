@@ -3,7 +3,7 @@ import InstallAppButton from "../components/ui/InstallAppButton.jsx";
 
 export default function LoginPage({ onLogin }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+    <main className="flex flex-1 items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-primary">کوزک</h1>
