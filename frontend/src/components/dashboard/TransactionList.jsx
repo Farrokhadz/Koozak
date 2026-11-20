@@ -1,20 +1,21 @@
 import Money from "../ui/Money.jsx";
+import { EditIcon, TrashIcon } from "../ui/icons.jsx";
+import { iconButton, iconButtonDanger } from "../ui/styles.js";
 import { formatJalaliDate, formatNumber } from "../../utils/format.js";
-import { TRANSACTION_TYPES } from "../../utils/finance.js";
+import { TRANSACTION_TYPES, transactionTitle } from "../../utils/finance.js";
 
 const MAX_VISIBLE = 50;
 
-function TransactionRow({ transaction, accountsById, categoriesById }) {
+function TransactionRow({
+  transaction,
+  accountsById,
+  categoriesById,
+  onEdit,
+  onDelete,
+}) {
   const style = TRANSACTION_TYPES[transaction.type];
   const account = accountsById[transaction.account]?.name ?? "—";
-
-  let title;
-  if (transaction.type === "transfer") {
-    const target = accountsById[transaction.to_account]?.name ?? "—";
-    title = `${account} ← ${target}`;
-  } else {
-    title = categoriesById[transaction.category]?.name_fa ?? style.label;
-  }
+  const title = transactionTitle(transaction, accountsById, categoriesById);
 
   const details = [
     transaction.type === "transfer" ? "انتقال" : account,
@@ -23,7 +24,7 @@ function TransactionRow({ transaction, accountsById, categoriesById }) {
   ].filter(Boolean);
 
   return (
-    <li className="flex items-center gap-4 px-4 py-4 sm:px-6">
+    <li className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6">
       <span
         aria-hidden="true"
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-bold ${style.badge}`}
@@ -50,6 +51,25 @@ function TransactionRow({ transaction, accountsById, categoriesById }) {
           </p>
         ) : null}
       </div>
+
+      <div className="flex shrink-0">
+        <button
+          type="button"
+          onClick={() => onEdit(transaction)}
+          aria-label={`ویرایش تراکنش ${title}`}
+          className={iconButton}
+        >
+          <EditIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(transaction)}
+          aria-label={`حذف تراکنش ${title}`}
+          className={iconButtonDanger}
+        >
+          <TrashIcon />
+        </button>
+      </div>
     </li>
   );
 }
@@ -58,6 +78,8 @@ export default function TransactionList({
   transactions,
   accountsById,
   categoriesById,
+  onEdit,
+  onDelete,
 }) {
   if (transactions.length === 0) {
     return (
@@ -78,6 +100,8 @@ export default function TransactionList({
             transaction={transaction}
             accountsById={accountsById}
             categoriesById={categoriesById}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
       </ul>

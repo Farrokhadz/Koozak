@@ -10,6 +10,7 @@ import {
 import {
   createCategory,
   createTransaction,
+  updateTransaction,
 } from "../../services/financeService.js";
 import { formatJalaliDate, todayIso } from "../../utils/format.js";
 import { TRANSACTION_TYPES } from "../../utils/finance.js";
@@ -17,20 +18,32 @@ import { TRANSACTION_TYPES } from "../../utils/finance.js";
 const cleanName = (value) => value.replace(/\s+/g, " ").trim();
 
 export default function TransactionFormModal({
-  accounts, // active (non-archived) accounts only
+  transaction, // the transaction being edited; omit to create a new one
+  accounts, // active accounts (plus the ones this transaction already uses)
   categories,
   onClose,
-  onCreated,
+  onSaved,
   onCategoryCreated,
 }) {
-  const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("");
-  const [accountId, setAccountId] = useState(String(accounts[0]?.id ?? ""));
-  const [toAccountId, setToAccountId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [fee, setFee] = useState("");
-  const [date, setDate] = useState(todayIso());
-  const [note, setNote] = useState("");
+  const isEditing = Boolean(transaction);
+  const [type, setType] = useState(transaction?.type ?? "expense");
+  const [amount, setAmount] = useState(
+    transaction ? String(transaction.amount) : "",
+  );
+  const [accountId, setAccountId] = useState(
+    String(transaction?.account ?? accounts[0]?.id ?? ""),
+  );
+  const [toAccountId, setToAccountId] = useState(
+    String(transaction?.to_account ?? ""),
+  );
+  const [categoryId, setCategoryId] = useState(
+    String(transaction?.category ?? ""),
+  );
+  const [fee, setFee] = useState(
+    transaction?.fee > 0 ? String(transaction.fee) : "",
+  );
+  const [date, setDate] = useState(transaction?.date ?? todayIso());
+  const [note, setNote] = useState(transaction?.note ?? "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,7 +55,9 @@ export default function TransactionFormModal({
   const isTransfer = type === "transfer";
   const busy = loading || categoryLoading;
   const typeCategories = categories.filter(
-    (category) => category.kind === type && !category.is_archived,
+    (category) =>
+      category.kind === type &&
+      (!category.is_archived || String(category.id) === categoryId),
   );
   const targetAccounts = accounts.filter(
     (account) => String(account.id) !== accountId,
@@ -144,14 +159,15 @@ export default function TransactionFormModal({
       note: note.trim(),
       ...(isTransfer
         ? { to_account: Number(toAccountId), fee: Number(fee || 0), category: null }
-        : { category: Number(categoryId), to_account: null }),
+        : { category: Number(categoryId), to_account: null, fee: 0 }),
     };
 
     setLoading(true);
     setError("");
     try {
-      await createTransaction(payload);
-      onCreated();
+      if (isEditing) await updateTransaction(transaction.id, payload);
+      else await createTransaction(payload);
+      onSaved();
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -159,7 +175,7 @@ export default function TransactionFormModal({
   };
 
   return (
-    <Modal title="تراکنش جدید" onClose={onClose}>
+    <Modal title={isEditing ? "ویرایش تراکنش" : "تراکنش جدید"} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
           <div
@@ -384,7 +400,11 @@ export default function TransactionFormModal({
         ) : null}
 
         <button type="submit" disabled={busy} className={`${primaryButton} w-full`}>
-          {loading ? "در حال ذخیره..." : "ثبت تراکنش"}
+          {loading
+            ? "در حال ذخیره..."
+            : isEditing
+              ? "ذخیره تغییرات"
+              : "ثبت تراکنش"}
         </button>
       </form>
     </Modal>

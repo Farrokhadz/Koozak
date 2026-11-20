@@ -31,3 +31,16 @@ export const TRANSACTION_TYPES = {
     active: "bg-accent text-text",
   },
 };
+
+/** Row heading: "from ← to" for transfers, the category name otherwise. */
+export function transactionTitle(transaction, accountsById, categoriesById) {
+  if (transaction.type === "transfer") {
+    const from = accountsById[transaction.account]?.name ?? "—";
+    const to = accountsById[transaction.to_account]?.name ?? "—";
+    return `${from} ← ${to}`;
+  }
+  return (
+    categoriesById[transaction.category]?.name_fa ??
+    TRANSACTION_TYPES[transaction.type].label
+  );
+}
