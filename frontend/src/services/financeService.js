@@ -20,3 +20,15 @@ export const listTransactions = async () =>
 
 export const createTransaction = (payload) =>
   apiRequest("/api/transactions/", { method: "POST", body: payload });
+
+export const updateAccount = (id, payload) =>
+  apiRequest(`/api/accounts/${id}/`, { method: "PATCH", body: payload });
+
+export const deleteAccount = (id) =>
+  apiRequest(`/api/accounts/${id}/`, { method: "DELETE" });
+
+export const updateTransaction = (id, payload) =>
+  apiRequest(`/api/transactions/${id}/`, { method: "PATCH", body: payload });
+
+export const deleteTransaction = (id) =>
+  apiRequest(`/api/transactions/${id}/`, { method: "DELETE" });
