@@ -65,3 +65,24 @@ def ensure_sufficient_funds(old, new):
             f"کمبود: {_format_toman(shortfall)} تومان."
         )
         raise ValidationError({"amount": [message]})
+
+
+def ensure_initial_balance_allowed(account, new_initial_balance):
+    """Lowering the opening balance lowers the balance by the same amount.
+
+    Must run inside transaction.atomic() with the account row locked.
+    """
+    delta = new_initial_balance - account.initial_balance
+    if delta >= 0:
+        return
+
+    shortfall = -(account.balance + delta)
+    if shortfall > 0:
+        raise ValidationError(
+            {
+                "initial_balance": [
+                    f"با این موجودی اولیه، موجودی حساب «{account.name}» منفی می‌شود "
+                    f"(کمبود: {_format_toman(shortfall)} تومان)."
+                ]
+            }
+        )

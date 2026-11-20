@@ -315,3 +315,82 @@ class InsufficientFundsTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(self.cash.balance, 1000)
+
+    def test_lowering_initial_balance_below_spending_is_rejected(self):
+        self._expense(600)  # balance 400 on an opening balance of 1000
+        url = reverse("account-detail", args=[self.cash.id])
+
+        response = self.client.patch(url, {"initial_balance": 500}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("initial_balance", response.data)
+        self.cash.refresh_from_db()
+        self.assertEqual(self.cash.initial_balance, 1000)
+
+    def test_lowering_initial_balance_to_exactly_spending_is_allowed(self):
+        self._expense(600)
+        url = reverse("account-detail", args=[self.cash.id])
+
+        response = self.client.patch(url, {"initial_balance": 600}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.cash.refresh_from_db()  # initial_balance changed in the database
+        self.assertEqual(self.cash.balance, 0)
+
+    def test_raising_initial_balance_and_renaming_are_allowed(self):
+        url = reverse("account-detail", args=[self.cash.id])
+
+        response = self.client.patch(
+            url, {"name": "Wallet", "initial_balance": 5000}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["balance"], 5000)
+
+    def test_negative_initial_balance_is_rejected(self):
+        response = self.client.post(
+            reverse("account-list"),
+            {"name": "Debt", "type": Account.Type.CASH, "initial_balance": -1},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_duplicate_account_name_is_a_400_not_a_500(self):
+        response = self.client.post(
+            reverse("account-list"),
+            {"name": "Cash", "type": Account.Type.CASH},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        url = reverse("account-detail", args=[self.card.id])
+        response = self.client.patch(url, {"name": "Cash"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_account_can_keep_its_own_name_when_edited(self):
+        url = reverse("account-detail", args=[self.cash.id])
+
+        response = self.client.patch(
+            url, {"name": "Cash", "type": Account.Type.WALLET}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_account_with_transactions_cannot_be_deleted_but_can_be_archived(self):
+        self._expense(100)
+        url = reverse("account-detail", args=[self.cash.id])
+
+        self.assertEqual(self.client.delete(url).status_code, 400)
+        self.assertTrue(Account.objects.filter(pk=self.cash.pk).exists())
+
+        response = self.client.patch(url, {"is_archived": True}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_archived"])
+
+    def test_account_without_transactions_can_be_deleted(self):
+        url = reverse("account-detail", args=[self.card.id])
+
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

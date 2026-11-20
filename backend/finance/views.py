@@ -12,7 +12,7 @@ from finance.serializers import (
     CategorySerializer,
     TransactionSerializer,
 )
-from finance.services import ensure_sufficient_funds
+from finance.services import ensure_initial_balance_allowed, ensure_sufficient_funds
 
 
 class IsOwner(permissions.BasePermission):
@@ -50,6 +50,19 @@ class OwnedModelViewSet(viewsets.ModelViewSet):
 class AccountViewSet(OwnedModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
+
+    def perform_update(self, serializer):
+        with transaction.atomic():
+            stored = Account.objects.select_for_update().get(
+                pk=serializer.instance.pk
+            )
+            ensure_initial_balance_allowed(
+                stored,
+                serializer.validated_data.get(
+                    "initial_balance", stored.initial_balance
+                ),
+            )
+            serializer.save()
 
 
 class CategoryViewSet(OwnedModelViewSet):

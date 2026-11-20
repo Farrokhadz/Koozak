@@ -24,6 +24,18 @@ class AccountSerializer(serializers.ModelSerializer):
             "is_archived",
             "balance",
         ]
+        extra_kwargs = {"initial_balance": {"min_value": 0}}
+
+    def validate_name(self, value):
+        # The (user, name) unique constraint would otherwise surface as a 500.
+        clash = Account.objects.filter(
+            user=self.context["request"].user, name=value
+        )
+        if self.instance is not None:
+            clash = clash.exclude(pk=self.instance.pk)
+        if clash.exists():
+            raise serializers.ValidationError("حسابی با این نام از قبل وجود دارد.")
+        return value
 
 
 class CategorySerializer(serializers.ModelSerializer):
