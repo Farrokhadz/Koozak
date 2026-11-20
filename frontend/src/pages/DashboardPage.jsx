@@ -1,16 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AccountCard from "../components/dashboard/AccountCard.jsx";
 import AccountFormModal from "../components/dashboard/AccountFormModal.jsx";
+import ArchivedAccounts from "../components/dashboard/ArchivedAccounts.jsx";
 import TransactionFormModal from "../components/dashboard/TransactionFormModal.jsx";
 import TransactionList from "../components/dashboard/TransactionList.jsx";
+import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import Money from "../components/ui/Money.jsx";
 import InstallAppButton from "../components/ui/InstallAppButton.jsx";
 import { primaryButton, secondaryButton } from "../components/ui/styles.js";
 import {
+  deleteAccount,
+  deleteTransaction,
   listAccounts,
   listCategories,
   listTransactions,
+  updateAccount,
 } from "../services/financeService.js";
+import { transactionTitle } from "../utils/finance.js";
+import { formatNumber } from "../utils/format.js";
 
 const byId = (items) =>
   Object.fromEntries(items.map((item) => [item.id, item]));
@@ -26,7 +33,11 @@ export default function DashboardPage({
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [modal, setModal] = useState(null); // "account" | "transaction" | null
+  const [actionError, setActionError] = useState("");
+  // { kind: "account" | "transaction", account?, transaction? } or null
+  const [modal, setModal] = useState(null);
+  // { kind: "delete-transaction" | "delete-account" | "archive-account", ... }
+  const [confirm, setConfirm] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,12 +66,25 @@ export default function DashboardPage({
     () => accounts.filter((account) => !account.is_archived),
     [accounts],
   );
+  const archivedAccounts = useMemo(
+    () => accounts.filter((account) => account.is_archived),
+    [accounts],
+  );
   const accountsById = useMemo(() => byId(accounts), [accounts]);
   const categoriesById = useMemo(() => byId(categories), [categories]);
   const totalBalance = useMemo(
     () => activeAccounts.reduce((sum, account) => sum + account.balance, 0),
     [activeAccounts],
   );
+  // Accounts that appear in any transaction can't be deleted, only archived.
+  const usedAccountIds = useMemo(() => {
+    const ids = new Set();
+    for (const item of transactions) {
+      ids.add(item.account);
+      if (item.to_account) ids.add(item.to_account);
+    }
+    return ids;
+  }, [transactions]);
   // Newest first; created_at breaks ties between rows on the same day.
   const sortedTransactions = useMemo(
     () =>
@@ -72,10 +96,43 @@ export default function DashboardPage({
     [transactions],
   );
 
-  const handleCreated = () => {
+  const handleSaved = () => {
     setModal(null);
+    setActionError("");
     load();
   };
+
+  const closeConfirm = () => setConfirm(null);
+
+  // Each confirm handler throws on failure: ConfirmDialog shows the message.
+  const runConfirmed = async (action) => {
+    await action();
+    setConfirm(null);
+    setActionError("");
+    await load();
+  };
+
+  const restoreAccount = async (account) => {
+    try {
+      await updateAccount(account.id, { is_archived: false });
+      setActionError("");
+      await load();
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  // Editing a transaction must still offer the accounts it already uses,
+  // even if one of them has been archived since.
+  const editedTransaction = modal?.kind === "transaction" ? modal.transaction : null;
+  const transactionFormAccounts = editedTransaction
+    ? accounts.filter(
+        (account) =>
+          !account.is_archived ||
+          account.id === editedTransaction.account ||
+          account.id === editedTransaction.to_account,
+      )
+    : activeAccounts;
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,6 +165,12 @@ export default function DashboardPage({
           </p>
         ) : null}
 
+        {actionError ? (
+          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </p>
+        ) : null}
+
         {error ? (
           <div role="alert" className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
             <span>{error}</span>
@@ -132,7 +195,7 @@ export default function DashboardPage({
             </h2>
             <button
               type="button"
-              onClick={() => setModal("account")}
+              onClick={() => setModal({ kind: "account" })}
               disabled={loading}
               className={`${secondaryButton} px-4 py-2 text-sm`}
             >
@@ -149,10 +212,28 @@ export default function DashboardPage({
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {activeAccounts.map((account) => (
-                <AccountCard key={account.id} account={account} />
+                <AccountCard
+                  key={account.id}
+                  account={account}
+                  onEdit={(item) => setModal({ kind: "account", account: item })}
+                  onArchive={(item) =>
+                    setConfirm({ kind: "archive-account", account: item })
+                  }
+                  onDelete={(item) =>
+                    setConfirm({ kind: "delete-account", account: item })
+                  }
+                />
               ))}
             </div>
           )}
+
+          <ArchivedAccounts
+            accounts={archivedAccounts}
+            onRestore={restoreAccount}
+            onDelete={(item) =>
+              setConfirm({ kind: "delete-account", account: item })
+            }
+          />
         </section>
 
         <section aria-labelledby="transactions-title">
@@ -162,7 +243,7 @@ export default function DashboardPage({
             </h2>
             <button
               type="button"
-              onClick={() => setModal("transaction")}
+              onClick={() => setModal({ kind: "transaction" })}
               disabled={loading || activeAccounts.length === 0}
               className={`${primaryButton} px-4 py-2 text-sm`}
             >
@@ -175,29 +256,100 @@ export default function DashboardPage({
               transactions={sortedTransactions}
               accountsById={accountsById}
               categoriesById={categoriesById}
+              onEdit={(item) => setModal({ kind: "transaction", transaction: item })}
+              onDelete={(item) =>
+                setConfirm({ kind: "delete-transaction", transaction: item })
+              }
             />
           )}
         </section>
       </main>
 
-      {modal === "account" ? (
+      {modal?.kind === "account" ? (
         <AccountFormModal
+          account={modal.account}
           accounts={accounts}
           onClose={() => setModal(null)}
-          onCreated={handleCreated}
+          onSaved={handleSaved}
         />
       ) : null}
 
-      {modal === "transaction" ? (
+      {modal?.kind === "transaction" ? (
         <TransactionFormModal
-          accounts={activeAccounts}
+          transaction={modal.transaction}
+          accounts={transactionFormAccounts}
           categories={categories}
           onClose={() => setModal(null)}
-          onCreated={handleCreated}
+          onSaved={handleSaved}
           onCategoryCreated={(created) =>
             setCategories((previous) => [...previous, created])
           }
         />
+      ) : null}
+
+      {confirm?.kind === "delete-transaction" ? (
+        <ConfirmDialog
+          title="حذف تراکنش"
+          confirmLabel="حذف تراکنش"
+          onClose={closeConfirm}
+          onConfirm={() =>
+            runConfirmed(() => deleteTransaction(confirm.transaction.id))
+          }
+        >
+          تراکنش «
+          {transactionTitle(confirm.transaction, accountsById, categoriesById)}
+          » به مبلغ {formatNumber(confirm.transaction.amount)} تومان حذف شود؟
+          موجودی حساب‌ها دوباره محاسبه می‌شود.
+        </ConfirmDialog>
+      ) : null}
+
+      {confirm?.kind === "delete-account" &&
+      usedAccountIds.has(confirm.account.id) ? (
+        <ConfirmDialog
+          title="حذف این حساب ممکن نیست"
+          confirmLabel="آرشیو حساب"
+          danger={false}
+          onClose={closeConfirm}
+          onConfirm={() =>
+            runConfirmed(() =>
+              updateAccount(confirm.account.id, { is_archived: true }),
+            )
+          }
+        >
+          حساب «{confirm.account.name}» تراکنش ثبت‌شده دارد و حذف نمی‌شود. اگر
+          دیگر به آن نیاز ندارید، می‌توانید آرشیوش کنید؛ تراکنش‌های آن می‌ماند و
+          بعداً قابل بازگردانی است. یا ابتدا تراکنش‌های آن را حذف کنید.
+        </ConfirmDialog>
+      ) : null}
+
+      {confirm?.kind === "delete-account" &&
+      !usedAccountIds.has(confirm.account.id) ? (
+        <ConfirmDialog
+          title="حذف حساب"
+          confirmLabel="حذف حساب"
+          onClose={closeConfirm}
+          onConfirm={() => runConfirmed(() => deleteAccount(confirm.account.id))}
+        >
+          حساب «{confirm.account.name}» برای همیشه حذف شود؟
+        </ConfirmDialog>
+      ) : null}
+
+      {confirm?.kind === "archive-account" ? (
+        <ConfirmDialog
+          title="آرشیو حساب"
+          confirmLabel="آرشیو حساب"
+          danger={false}
+          onClose={closeConfirm}
+          onConfirm={() =>
+            runConfirmed(() =>
+              updateAccount(confirm.account.id, { is_archived: true }),
+            )
+          }
+        >
+          حساب «{confirm.account.name}» آرشیو شود؟ از فهرست حساب‌ها و مجموع
+          موجودی کنار می‌رود، ولی تراکنش‌هایش می‌ماند. هر وقت خواستید از بخش
+          «حساب‌های آرشیوشده» برش می‌گردانید.
+        </ConfirmDialog>
       ) : null}
     </div>
   );
