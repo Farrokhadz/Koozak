@@ -24,8 +24,12 @@ export const createTransaction = (payload) =>
 export const updateAccount = (id, payload) =>
   apiRequest(`/api/accounts/${id}/`, { method: "PATCH", body: payload });
 
-export const deleteAccount = (id) =>
-  apiRequest(`/api/accounts/${id}/`, { method: "DELETE" });
+// With `withTransactions`, every transaction of the account is deleted too.
+export const deleteAccount = (id, { withTransactions = false } = {}) =>
+  apiRequest(
+    `/api/accounts/${id}/${withTransactions ? "?delete_transactions=true" : ""}`,
+    { method: "DELETE" },
+  );
 
 export const updateTransaction = (id, payload) =>
   apiRequest(`/api/transactions/${id}/`, { method: "PATCH", body: payload });

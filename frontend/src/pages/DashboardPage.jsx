@@ -122,6 +122,23 @@ export default function DashboardPage({
     }
   };
 
+  // "۵ تراکنش (۳ هزینه، ۱ درآمد، ۱ انتقال)" for the delete-account dialog.
+  const usageSummary = (accountId) => {
+    const counts = { expense: 0, income: 0, transfer: 0 };
+    for (const item of transactions) {
+      if (item.account === accountId || item.to_account === accountId) {
+        counts[item.type] += 1;
+      }
+    }
+    const total = counts.expense + counts.income + counts.transfer;
+    const parts = [
+      counts.expense && `${formatNumber(counts.expense)} هزینه`,
+      counts.income && `${formatNumber(counts.income)} درآمد`,
+      counts.transfer && `${formatNumber(counts.transfer)} انتقال`,
+    ].filter(Boolean);
+    return `${formatNumber(total)} تراکنش (${parts.join("، ")})`;
+  };
+
   // Editing a transaction must still offer the accounts it already uses,
   // even if one of them has been archived since.
   const editedTransaction = modal?.kind === "transaction" ? modal.transaction : null;
@@ -306,19 +323,26 @@ export default function DashboardPage({
       {confirm?.kind === "delete-account" &&
       usedAccountIds.has(confirm.account.id) ? (
         <ConfirmDialog
-          title="حذف این حساب ممکن نیست"
-          confirmLabel="آرشیو حساب"
-          danger={false}
+          title="حذف حساب و تراکنش‌ها"
+          confirmLabel="حذف حساب و تراکنش‌ها"
           onClose={closeConfirm}
           onConfirm={() =>
             runConfirmed(() =>
-              updateAccount(confirm.account.id, { is_archived: true }),
+              deleteAccount(confirm.account.id, { withTransactions: true }),
             )
           }
         >
-          حساب «{confirm.account.name}» تراکنش ثبت‌شده دارد و حذف نمی‌شود. اگر
-          دیگر به آن نیاز ندارید، می‌توانید آرشیوش کنید؛ تراکنش‌های آن می‌ماند و
-          بعداً قابل بازگردانی است. یا ابتدا تراکنش‌های آن را حذف کنید.
+          <p>
+            با حساب «{confirm.account.name}» تاکنون{" "}
+            <strong>{usageSummary(confirm.account.id)}</strong> ثبت کرده‌اید.
+          </p>
+          <p className="mt-2">
+            با حذف این حساب، همه این تراکنش‌ها هم برای همیشه پاک می‌شوند و
+            قابل بازگشت نیستند. مطمئنید که می‌خواهید حذفشان کنید؟
+          </p>
+          <p className="mt-2 text-text/60">
+            اگر فقط نمی‌خواهید حساب نمایش داده شود، به‌جای حذف آرشیوش کنید.
+          </p>
         </ConfirmDialog>
       ) : null}
 
