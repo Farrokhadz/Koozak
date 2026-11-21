@@ -12,7 +12,11 @@ from finance.serializers import (
     CategorySerializer,
     TransactionSerializer,
 )
-from finance.services import ensure_initial_balance_allowed, ensure_sufficient_funds
+from finance.services import (
+    delete_account_with_transactions,
+    ensure_initial_balance_allowed,
+    ensure_sufficient_funds,
+)
 
 
 class IsOwner(permissions.BasePermission):
@@ -63,6 +67,16 @@ class AccountViewSet(OwnedModelViewSet):
                 ),
             )
             serializer.save()
+
+    def perform_destroy(self, instance):
+        # By default an account that has transactions can't be deleted. The
+        # client asks for the full delete explicitly, after confirming with
+        # the user: DELETE /api/accounts/<id>/?delete_transactions=true
+        if self.request.query_params.get("delete_transactions") in ("1", "true"):
+            with transaction.atomic():
+                delete_account_with_transactions(instance)
+            return
+        super().perform_destroy(instance)
 
 
 class CategoryViewSet(OwnedModelViewSet):

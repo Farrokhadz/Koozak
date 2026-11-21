@@ -394,3 +394,54 @@ class InsufficientFundsTests(APITestCase):
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def _delete_with_transactions(self, account):
+        url = reverse("account-detail", args=[account.id])
+        return self.client.delete(f"{url}?delete_transactions=true")
+
+    def test_full_delete_removes_the_account_and_all_its_transactions(self):
+        self._expense(100)
+        self._income(50)
+        self._transfer(200)  # cash -> card
+
+        response = self._delete_with_transactions(self.cash)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Account.objects.filter(pk=self.cash.pk).exists())
+        self.assertEqual(Transaction.objects.count(), 0)
+        self.card.refresh_from_db()
+        self.assertEqual(self.card.balance, 0)  # the incoming transfer is gone
+
+    def test_full_delete_is_refused_if_it_would_overdraw_the_other_account(self):
+        self._transfer(500)  # card receives 500
+        self._expense(300, account=self.card)  # card is left with 200
+
+        response = self._delete_with_transactions(self.cash)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Account.objects.filter(pk=self.cash.pk).exists())
+        self.assertEqual(Transaction.objects.count(), 2)
+        self.assertEqual(self.card.balance, 200)
+
+    def test_full_delete_of_the_receiving_account_is_allowed(self):
+        self._transfer(500)  # cash -> card
+
+        response = self._delete_with_transactions(self.card)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Transaction.objects.count(), 0)
+        self.assertEqual(self.cash.balance, 1000)  # the transfer is undone
+
+    def test_full_delete_works_for_an_account_without_transactions(self):
+        response = self._delete_with_transactions(self.card)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_full_delete_does_not_touch_other_users_accounts(self):
+        other = User.objects.create_user(phone="09120000012")
+        theirs = Account.objects.create(user=other, name="Theirs", type=Account.Type.CASH)
+
+        response = self._delete_with_transactions(theirs)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Account.objects.filter(pk=theirs.pk).exists())
