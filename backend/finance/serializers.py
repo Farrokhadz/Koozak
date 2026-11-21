@@ -20,6 +20,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "type",
+            "color",
             "initial_balance",
             "is_archived",
             "balance",

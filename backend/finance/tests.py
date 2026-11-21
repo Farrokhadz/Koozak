@@ -445,3 +445,47 @@ class InsufficientFundsTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Account.objects.filter(pk=theirs.pk).exists())
+
+
+class AccountColorTests(APITestCase):
+    """Each account carries the card color its owner picked."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(phone="09120000021")
+        self.client.force_authenticate(self.user)
+
+    def _create(self, **extra):
+        return self.client.post(
+            reverse("account-list"),
+            {"name": "Card", "type": Account.Type.BANK_CARD, **extra},
+            format="json",
+        )
+
+    def test_color_defaults_to_green(self):
+        response = self._create()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["color"], "green")
+
+    def test_a_picked_color_is_saved(self):
+        response = self._create(color="blue")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["color"], "blue")
+        self.assertEqual(Account.objects.get().color, "blue")
+
+    def test_unknown_color_is_rejected(self):
+        response = self._create(color="hotpink")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("color", response.data)
+        self.assertEqual(Account.objects.count(), 0)
+
+    def test_color_can_be_changed_later(self):
+        created = self._create(color="blue")
+        url = reverse("account-detail", args=[created.data["id"]])
+
+        response = self.client.patch(url, {"color": "rose"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["color"], "rose")

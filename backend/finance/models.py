@@ -13,11 +13,24 @@ class Account(models.Model):
         WALLET = "wallet", "کیف پول"
         BANK_CARD = "bank_card", "کارت بانکی"
 
+    class Color(models.TextChoices):
+        GREEN = "green", "سبز"
+        BLUE = "blue", "آبی"
+        TEAL = "teal", "فیروزه‌ای"
+        PURPLE = "purple", "بنفش"
+        ROSE = "rose", "صورتی"
+        ORANGE = "orange", "نارنجی"
+        AMBER = "amber", "زرد"
+        SLATE = "slate", "خاکستری"
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts"
     )
     name = models.CharField(max_length=60)
     type = models.CharField(max_length=12, choices=Type.choices)
+    color = models.CharField(
+        max_length=10, choices=Color.choices, default=Color.GREEN
+    )  # the card color the user picked
     initial_balance = models.BigIntegerField(default=0)  # تومان
     is_archived = models.BooleanField(default=False)
 
