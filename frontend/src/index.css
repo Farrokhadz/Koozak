@@ -14,3 +14,32 @@
     @apply bg-background font-sans text-text antialiased;
   }
 }
+
+/*
+ * Row/card actions that stay out of the way: on devices with a real hover
+ * they appear when the row (a `.group`) is hovered or focused; on touch
+ * screens they are always visible because there is no hover to reveal them.
+ */
+@layer components {
+  .reveal-on-hover {
+    transition: opacity 150ms ease;
+  }
+
+  @media (hover: hover) {
+    .reveal-on-hover {
+      opacity: 0;
+    }
+
+    .group:hover .reveal-on-hover,
+    .group:focus-within .reveal-on-hover {
+      opacity: 1;
+    }
+
+    .reveal-overlay {
+      position: absolute;
+      top: 0.75rem;
+      inset-inline-end: 0.75rem;
+      border-radius: 9999px;
+    }
+  }
+}

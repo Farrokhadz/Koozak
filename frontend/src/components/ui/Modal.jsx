@@ -22,7 +22,7 @@ export default function Modal({ title, onClose, children }) {
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-text/50 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-text/30 backdrop-blur-[2px] sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -31,17 +31,17 @@ export default function Modal({ title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-surface p-6 shadow-xl sm:max-w-md sm:rounded-3xl"
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-surface p-6 shadow-lg sm:max-w-md sm:rounded-2xl"
       >
         <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 id="modal-title" className="text-xl font-bold text-primary">
+          <h2 id="modal-title" className="text-base font-semibold text-text">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="بستن"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-text/60 transition hover:bg-background hover:text-text focus:outline-none focus:ring-2 focus:ring-secondary"
+            className="-me-2 flex h-8 w-8 items-center justify-center rounded-full text-text/40 transition hover:bg-text/5 hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             ✕
           </button>
