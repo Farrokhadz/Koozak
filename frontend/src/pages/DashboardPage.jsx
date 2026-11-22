@@ -7,7 +7,7 @@ import TransactionList from "../components/dashboard/TransactionList.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import Money from "../components/ui/Money.jsx";
 import InstallAppButton from "../components/ui/InstallAppButton.jsx";
-import { primaryButton, secondaryButton } from "../components/ui/styles.js";
+import { ghostButtonSm, primaryButtonSm } from "../components/ui/styles.js";
 import {
   deleteAccount,
   deleteTransaction,
@@ -152,30 +152,26 @@ export default function DashboardPage({
     : activeAccounts;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-secondary/30 bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">کوزک</h1>
-            <p dir="ltr" className="text-start text-xs text-text/60">
-              {user.phone ?? user.email}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <InstallAppButton />
-            <button
-              type="button"
-              onClick={onLogout}
-              disabled={loggingOut}
-              className={`${secondaryButton} px-4 py-2 text-sm`}
-            >
-              {loggingOut ? "در حال خروج..." : "خروج"}
-            </button>
-          </div>
+    <div>
+      <header className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+        <h1 className="text-lg font-semibold text-primary">کوزک</h1>
+        <div className="flex items-center gap-1">
+          <span dir="ltr" className="me-2 hidden text-xs text-text/40 sm:inline">
+            {user.phone ?? user.email}
+          </span>
+          <InstallAppButton />
+          <button
+            type="button"
+            onClick={onLogout}
+            disabled={loggingOut}
+            className={ghostButtonSm}
+          >
+            {loggingOut ? "در حال خروج..." : "خروج"}
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-4xl space-y-10 px-4 pb-12 pt-2 sm:px-6">
         {logoutError ? (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {logoutError}
@@ -189,45 +185,51 @@ export default function DashboardPage({
         ) : null}
 
         {error ? (
-          <div role="alert" className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="flex items-center justify-between gap-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             <span>{error}</span>
-            <button type="button" onClick={load} className="shrink-0 font-bold underline">
+            <button type="button" onClick={load} className="shrink-0 font-medium underline">
               تلاش دوباره
             </button>
           </div>
         ) : null}
 
-        <section className="rounded-3xl bg-primary p-6 text-white shadow-sm">
-          <p className="text-sm text-white/70">مجموع موجودی حساب‌ها</p>
+        <section aria-label="مجموع موجودی">
+          <p className="text-sm text-text/50">مجموع موجودی</p>
           <Money
             value={totalBalance}
-            className="mt-2 block text-3xl font-bold sm:text-4xl"
+            className="mt-1 block text-4xl font-semibold tracking-tight sm:text-5xl"
+            unitClassName="text-base font-normal text-text/40"
           />
+          {activeAccounts.length > 0 ? (
+            <p className="mt-2 text-xs text-text/40">
+              از {formatNumber(activeAccounts.length)} حساب
+            </p>
+          ) : null}
         </section>
 
         <section aria-labelledby="accounts-title">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 id="accounts-title" className="text-lg font-bold text-text">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 id="accounts-title" className="text-sm font-medium text-text/60">
               حساب‌ها
             </h2>
             <button
               type="button"
               onClick={() => setModal({ kind: "account" })}
               disabled={loading}
-              className={`${secondaryButton} px-4 py-2 text-sm`}
+              className={ghostButtonSm}
             >
               + حساب جدید
             </button>
           </div>
 
           {loading ? (
-            <p className="text-sm text-text/60">در حال بارگذاری...</p>
+            <p className="text-sm text-text/50">در حال بارگذاری...</p>
           ) : activeAccounts.length === 0 ? (
-            <div className="rounded-3xl bg-surface p-8 text-center text-sm text-text/60 shadow-sm">
+            <div className="rounded-2xl border border-dashed border-text/15 p-8 text-center text-sm text-text/50">
               هنوز حسابی نساخته‌اید. برای شروع یک حساب بسازید.
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {activeAccounts.map((account) => (
                 <AccountCard
                   key={account.id}
@@ -254,15 +256,15 @@ export default function DashboardPage({
         </section>
 
         <section aria-labelledby="transactions-title">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 id="transactions-title" className="text-lg font-bold text-text">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 id="transactions-title" className="text-sm font-medium text-text/60">
               تراکنش‌ها
             </h2>
             <button
               type="button"
               onClick={() => setModal({ kind: "transaction" })}
               disabled={loading || activeAccounts.length === 0}
-              className={`${primaryButton} px-4 py-2 text-sm`}
+              className={primaryButtonSm}
             >
               + تراکنش جدید
             </button>

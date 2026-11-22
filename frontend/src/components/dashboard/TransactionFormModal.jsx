@@ -5,7 +5,7 @@ import {
   inputClass,
   labelClass,
   primaryButton,
-  secondaryButton,
+  secondaryButtonSm,
 } from "../ui/styles.js";
 import {
   createCategory,
@@ -181,7 +181,7 @@ export default function TransactionFormModal({
           <div
             role="group"
             aria-label="نوع تراکنش"
-            className="grid grid-cols-3 gap-1 rounded-2xl bg-background p-1"
+            className="grid grid-cols-3 gap-1 rounded-xl bg-text/5 p-1"
           >
             {Object.entries(TRANSACTION_TYPES).map(([value, config]) => (
               <button
@@ -190,8 +190,8 @@ export default function TransactionFormModal({
                 aria-pressed={type === value}
                 disabled={busy || (value === "transfer" && accounts.length < 2)}
                 onClick={() => changeType(value)}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  type === value ? config.active : "text-text/70 hover:bg-surface"
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  type === value ? config.active : "text-text/60 hover:text-text"
                 }`}
               >
                 {config.label}
@@ -328,7 +328,7 @@ export default function TransactionFormModal({
                     type="button"
                     onClick={handleAddCategory}
                     disabled={busy}
-                    className={`${secondaryButton} shrink-0 px-4`}
+                    className={`${secondaryButtonSm} shrink-0`}
                   >
                     {categoryLoading ? "..." : "افزودن"}
                   </button>

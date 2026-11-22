@@ -12,7 +12,7 @@ export const TRANSACTION_TYPES = {
     icon: "↓",
     badge: "bg-emerald-50 text-emerald-700",
     amount: "text-emerald-700",
-    active: "bg-emerald-600 text-white",
+    active: "bg-surface text-emerald-700 shadow-sm",
   },
   expense: {
     label: "هزینه",
@@ -20,7 +20,7 @@ export const TRANSACTION_TYPES = {
     icon: "↑",
     badge: "bg-red-50 text-red-600",
     amount: "text-red-600",
-    active: "bg-red-600 text-white",
+    active: "bg-surface text-red-600 shadow-sm",
   },
   transfer: {
     label: "انتقال",
@@ -28,7 +28,7 @@ export const TRANSACTION_TYPES = {
     icon: "⇄",
     badge: "bg-accent/25 text-amber-800",
     amount: "text-amber-700",
-    active: "bg-accent text-text",
+    active: "bg-surface text-amber-700 shadow-sm",
   },
 };
 

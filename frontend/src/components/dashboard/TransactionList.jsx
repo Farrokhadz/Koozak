@@ -1,6 +1,6 @@
 import Money from "../ui/Money.jsx";
 import { EditIcon, TrashIcon } from "../ui/icons.jsx";
-import { iconButton, iconButtonDanger } from "../ui/styles.js";
+import { iconButton, iconButtonDanger, panel } from "../ui/styles.js";
 import { formatJalaliDate, formatNumber } from "../../utils/format.js";
 import { TRANSACTION_TYPES, transactionTitle } from "../../utils/finance.js";
 
@@ -24,42 +24,29 @@ function TransactionRow({
   ].filter(Boolean);
 
   return (
-    <li className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6">
+    <li className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-background/60 sm:px-5">
       <span
         aria-hidden="true"
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-bold ${style.badge}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base ${style.badge}`}
       >
         {style.icon}
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{title}</p>
-        <p className="mt-0.5 truncate text-xs text-text/60">
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="mt-0.5 truncate text-xs text-text/50">
           {details.join(" · ")}
         </p>
       </div>
 
-      <div className="shrink-0 text-end">
-        <Money
-          value={transaction.amount}
-          sign={style.sign}
-          className={`font-bold ${style.amount}`}
-        />
-        {transaction.fee > 0 ? (
-          <p className="mt-0.5 text-xs text-text/50">
-            کارمزد {formatNumber(transaction.fee)}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex shrink-0">
+      <div className="reveal-on-hover flex shrink-0">
         <button
           type="button"
           onClick={() => onEdit(transaction)}
           aria-label={`ویرایش تراکنش ${title}`}
           className={iconButton}
         >
-          <EditIcon />
+          <EditIcon size={16} />
         </button>
         <button
           type="button"
@@ -67,9 +54,22 @@ function TransactionRow({
           aria-label={`حذف تراکنش ${title}`}
           className={iconButtonDanger}
         >
-          <TrashIcon />
+          <TrashIcon size={16} />
         </button>
       </div>
+      <div className="shrink-0 text-end">
+        <Money
+          value={transaction.amount}
+          sign={style.sign}
+          className={`text-sm font-semibold ${style.amount}`}
+        />
+        {transaction.fee > 0 ? (
+          <p className="mt-0.5 text-xs text-text/40">
+            کارمزد {formatNumber(transaction.fee)}
+          </p>
+        ) : null}
+      </div>
+
     </li>
   );
 }
@@ -83,7 +83,7 @@ export default function TransactionList({
 }) {
   if (transactions.length === 0) {
     return (
-      <div className="rounded-3xl bg-surface p-8 text-center text-sm text-text/60 shadow-sm">
+      <div className="rounded-2xl border border-dashed border-text/15 p-8 text-center text-sm text-text/50">
         هنوز تراکنشی ثبت نشده است.
       </div>
     );
@@ -92,8 +92,8 @@ export default function TransactionList({
   const visible = transactions.slice(0, MAX_VISIBLE);
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-surface shadow-sm">
-      <ul className="divide-y divide-background">
+    <div className={`${panel} overflow-hidden`}>
+      <ul className="divide-y divide-text/5">
         {visible.map((transaction) => (
           <TransactionRow
             key={transaction.id}
@@ -106,8 +106,9 @@ export default function TransactionList({
         ))}
       </ul>
       {transactions.length > MAX_VISIBLE ? (
-        <p className="border-t border-background px-6 py-3 text-center text-xs text-text/60">
-          {formatNumber(MAX_VISIBLE)} تراکنش آخر از {formatNumber(transactions.length)} تراکنش نمایش داده می‌شود.
+        <p className="border-t border-text/5 px-5 py-3 text-center text-xs text-text/50">
+          {formatNumber(MAX_VISIBLE)} تراکنش آخر از{" "}
+          {formatNumber(transactions.length)} تراکنش نمایش داده می‌شود.
         </p>
       ) : null}
     </div>

@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import Modal from "./Modal.jsx";
-import { primaryButton, secondaryButton } from "./styles.js";
+import { ghostButtonSm, primaryButton } from "./styles.js";
 import {
   canPrompt,
   isIos,
@@ -33,7 +33,7 @@ export default function InstallAppButton({ className = "" }) {
       <button
         type="button"
         onClick={handleClick}
-        className={`${secondaryButton} inline-flex items-center gap-2 px-4 py-2 text-sm ${className}`}
+        className={`${ghostButtonSm} inline-flex items-center gap-1.5 ${className}`}
       >
         <span aria-hidden="true">⬇</span>
         نصب اپلیکیشن
