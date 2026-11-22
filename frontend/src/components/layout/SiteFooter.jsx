@@ -8,10 +8,10 @@ const LINKS = [
 
 export default function SiteFooter() {
   return (
-    <footer className="border-t border-secondary/30 bg-surface">
+    <footer className="border-t border-text/10">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm sm:px-6">
-        <p className="text-text/60">
-          <span className="font-bold text-primary">{SITE_NAME}</span> · مدیریت
+        <p className="text-text/50">
+          <span className="font-semibold text-primary">{SITE_NAME}</span> · مدیریت
           مالی شخصی
         </p>
         <nav aria-label="پیوندهای سایت">
@@ -20,7 +20,7 @@ export default function SiteFooter() {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                  className="text-text/60 transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {link.label}
                 </a>
