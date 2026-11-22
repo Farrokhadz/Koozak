@@ -1,9 +1,16 @@
 import { useState } from "react";
+import AccountBadge from "./AccountBadge.jsx";
 import Modal from "../ui/Modal.jsx";
 import MoneyInput from "../ui/MoneyInput.jsx";
+import { CheckIcon } from "../ui/icons.jsx";
 import { inputClass, labelClass, primaryButton } from "../ui/styles.js";
 import { createAccount, updateAccount } from "../../services/financeService.js";
 import { ACCOUNT_TYPES } from "../../utils/finance.js";
+import {
+  ACCOUNT_COLORS,
+  DEFAULT_ACCOUNT_COLOR,
+  accountColor,
+} from "../../utils/palette.js";
 
 const cleanName = (value) => value.replace(/\s+/g, " ").trim();
 
@@ -16,11 +23,14 @@ export default function AccountFormModal({
   const isEditing = Boolean(account);
   const [name, setName] = useState(account?.name ?? "");
   const [type, setType] = useState(account?.type ?? "bank_card");
+  const [color, setColor] = useState(account?.color ?? DEFAULT_ACCOUNT_COLOR);
   const [initialBalance, setInitialBalance] = useState(
     account ? String(account.initial_balance) : "",
   );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const palette = accountColor(color);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -35,8 +45,8 @@ export default function AccountFormModal({
       setError("نام حساب نباید بیشتر از ۶۰ حرف باشد.");
       return;
     }
-    // The backend answers a duplicate name with a 500, so check it here.
-    // Archived accounts count too: the database constraint covers them.
+    // Check here for a quicker message. Archived accounts count too: the
+    // database constraint covers them.
     if (
       accounts.some(
         (other) => other.id !== account?.id && other.name === trimmed,
@@ -52,6 +62,7 @@ export default function AccountFormModal({
       const payload = {
         name: trimmed,
         type,
+        color,
         initial_balance: Number(initialBalance || 0),
       };
       if (isEditing) await updateAccount(account.id, payload);
@@ -66,6 +77,21 @@ export default function AccountFormModal({
   return (
     <Modal title={isEditing ? "ویرایش حساب" : "حساب جدید"} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {/* Live preview, so the chosen color is visible before saving. */}
+        <div
+          aria-hidden="true"
+          style={{ backgroundColor: palette.soft, color: palette.ink }}
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 transition-colors"
+        >
+          <AccountBadge type={type} color={color} small />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">
+              {cleanName(name) || "نام حساب"}
+            </p>
+            <p className="text-xs opacity-60">{ACCOUNT_TYPES[type]?.label}</p>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="account-name" className={labelClass}>
             نام حساب
@@ -104,6 +130,32 @@ export default function AccountFormModal({
             ))}
           </select>
         </div>
+
+        <fieldset disabled={loading}>
+          <legend className={labelClass}>رنگ حساب</legend>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(ACCOUNT_COLORS).map(([key, option]) => (
+              <label key={key} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="account-color"
+                  value={key}
+                  checked={color === key}
+                  onChange={() => setColor(key)}
+                  aria-label={option.label}
+                  className="peer sr-only"
+                />
+                <span
+                  title={option.label}
+                  style={{ backgroundColor: option.solid }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white ring-offset-2 ring-offset-surface transition hover:scale-105 peer-checked:ring-2 peer-checked:ring-text/60 peer-focus-visible:ring-2 peer-focus-visible:ring-primary"
+                >
+                  {color === key ? <CheckIcon size={16} /> : null}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <div>
           <label htmlFor="account-balance" className={labelClass}>
