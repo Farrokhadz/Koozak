@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import ContactSection from "../components/help/ContactSection.jsx";
-import { secondaryButton } from "../components/ui/styles.js";
+import { panel, secondaryButtonSm } from "../components/ui/styles.js";
 import { SITE_NAME } from "../config/site.js";
 import { toPersianDigits } from "../utils/identifier.js";
 
@@ -19,7 +19,7 @@ const QUICK_START = [
   },
   {
     title: "یک حساب بسازید",
-    body: "روی «+ حساب جدید» بزنید و نام، نوع حساب (نقد، کیف پول یا کارت بانکی) و موجودی اولیه را وارد کنید. مثلاً برای کارت بانکی‌تان یک حساب بسازید.",
+    body: "روی «+ حساب جدید» بزنید و نام، نوع حساب (نقد، کیف پول یا کارت بانکی)، یک رنگ دلخواه و موجودی اولیه را وارد کنید. مثلاً برای کارت بانکی‌تان یک حساب بسازید.",
   },
   {
     title: "تراکنش ثبت کنید",
@@ -36,8 +36,9 @@ const FEATURES = [
     title: "حساب‌ها",
     items: [
       "سه نوع حساب دارید: نقد، کیف پول و کارت بانکی.",
+      "هر حساب یک رنگ دارد که هنگام ساختن آن از بین ۸ رنگ انتخاب می‌کنید و بعداً با ویرایش حساب قابل تغییر است. کارت حساب در داشبورد با همین رنگ نمایش داده می‌شود.",
       "موجودی اولیه مبلغی است که هنگام ساختن حساب در آن بوده است و نمی‌تواند منفی باشد.",
-      "با دکمه ویرایش روی کارت حساب می‌توانید نام، نوع و موجودی اولیه را تغییر دهید.",
+      "با دکمه ویرایش روی کارت حساب (در کامپیوتر با بردن موس روی کارت دیده می‌شود، در گوشی همیشه نمایش داده می‌شود) می‌توانید نام، نوع، رنگ و موجودی اولیه را تغییر دهید.",
       "آرشیو: حساب از فهرست و مجموع موجودی کنار می‌رود، ولی تراکنش‌هایش می‌ماند. هر وقت خواستید از بخش «حساب‌های آرشیوشده» برش می‌گردانید.",
       "حذف: حسابی که تراکنش ندارد پس از تایید حذف می‌شود. اگر تراکنش دارد، با تایید شما خود حساب و همه تراکنش‌هایش برای همیشه پاک می‌شود.",
     ],
@@ -122,9 +123,9 @@ function Card({ id, title, children }) {
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className="scroll-mt-20 rounded-3xl bg-surface p-6 shadow-sm sm:p-8"
+      className={`scroll-mt-20 ${panel} p-6 sm:p-8`}
     >
-      <h2 id={`${id}-title`} className="mb-5 text-xl font-bold text-primary">
+      <h2 id={`${id}-title`} className="mb-5 text-lg font-semibold">
         {title}
       </h2>
       {children}
@@ -140,16 +141,16 @@ export default function HelpPage({ section, onBack }) {
 
   return (
     <div className="bg-background">
-      <header className="border-b border-secondary/30 bg-surface">
+      <header className="border-b border-text/10">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
-            <p className="text-2xl font-bold text-primary">{SITE_NAME}</p>
-            <h1 className="text-sm text-text/70">راهنما و پشتیبانی</h1>
+            <p className="text-xl font-semibold text-primary">{SITE_NAME}</p>
+            <h1 className="text-sm text-text/50">راهنما و پشتیبانی</h1>
           </div>
           <button
             type="button"
             onClick={onBack}
-            className={`${secondaryButton} px-4 py-2 text-sm`}
+            className={secondaryButtonSm}
           >
             بازگشت به برنامه
           </button>
@@ -158,7 +159,7 @@ export default function HelpPage({ section, onBack }) {
 
       <nav
         aria-label="بخش‌های راهنما"
-        className="sticky top-0 z-10 border-b border-secondary/30 bg-surface/95 backdrop-blur"
+        className="sticky top-0 z-10 border-b border-text/10 bg-background/90 backdrop-blur"
       >
         <ul className="mx-auto flex max-w-3xl gap-2 overflow-x-auto px-4 py-3 sm:px-6">
           {NAV.map((item) => (
@@ -166,7 +167,7 @@ export default function HelpPage({ section, onBack }) {
               <button
                 type="button"
                 onClick={() => scrollToSection(item.id)}
-                className="rounded-full border border-secondary/40 px-4 py-1.5 text-sm text-primary transition hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="rounded-full border border-text/10 bg-surface px-3.5 py-1 text-sm text-text/70 transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {item.label}
               </button>
@@ -182,12 +183,12 @@ export default function HelpPage({ section, onBack }) {
               <li key={step.title} className="flex gap-4">
                 <span
                   aria-hidden="true"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary"
                 >
                   {toPersianDigits(index + 1)}
                 </span>
                 <div>
-                  <h3 className="font-bold text-text">{step.title}</h3>
+                  <h3 className="font-medium text-text">{step.title}</h3>
                   <p className="mt-1 text-sm leading-7 text-text/80">{step.body}</p>
                 </div>
               </li>
@@ -199,7 +200,7 @@ export default function HelpPage({ section, onBack }) {
           <div className="space-y-6">
             {FEATURES.map((feature) => (
               <div key={feature.title}>
-                <h3 className="font-bold text-text">{feature.title}</h3>
+                <h3 className="font-medium text-text">{feature.title}</h3>
                 <ul className="mt-2 list-disc space-y-1.5 ps-5 text-sm leading-7 text-text/80">
                   {feature.items.map((item) => (
                     <li key={item}>{item}</li>
@@ -211,10 +212,10 @@ export default function HelpPage({ section, onBack }) {
         </Card>
 
         <Card id="faq" title="سوالات متداول">
-          <div className="divide-y divide-background">
+          <div className="divide-y divide-text/5">
             {FAQ.map((item) => (
               <details key={item.q} className="group py-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                   {item.q}
                   <span
                     aria-hidden="true"

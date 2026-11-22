@@ -53,7 +53,7 @@ export default function ContactSection() {
                 {...(channel.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-secondary/40 bg-background px-4 py-3 transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="flex items-center justify-between gap-3 rounded-xl border border-text/10 bg-background px-4 py-3 transition hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <span className="text-sm font-medium text-text">
                   {channel.label}
@@ -66,7 +66,7 @@ export default function ContactSection() {
           ))}
         </ul>
       ) : (
-        <p className="mt-4 rounded-2xl bg-background px-4 py-3 text-sm leading-7 text-text/70">
+        <p className="mt-4 rounded-xl bg-background px-4 py-3 text-sm leading-7 text-text/70">
           راه‌های ارتباطی به‌زودی در همین بخش اضافه می‌شود.
         </p>
       )}
