@@ -25,3 +25,15 @@ export function todayIso() {
   const day = String(now.getDate()).padStart(2, "0");
   return `${now.getFullYear()}-${month}-${day}`;
 }
+
+const percentFormatter = new Intl.NumberFormat("fa-IR", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
+/** 0.375 -> "٣٨٪"; anything under one percent reads "کمتر از ۱٪". */
+export function formatPercent(share) {
+  return share > 0 && share < 0.01
+    ? `کمتر از ${percentFormatter.format(0.01)}`
+    : percentFormatter.format(share);
+}

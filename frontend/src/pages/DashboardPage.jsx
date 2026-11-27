@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AccountCard from "../components/dashboard/AccountCard.jsx";
 import AccountFormModal from "../components/dashboard/AccountFormModal.jsx";
 import ArchivedAccounts from "../components/dashboard/ArchivedAccounts.jsx";
+import BalanceOverview from "../components/dashboard/BalanceOverview.jsx";
 import TransactionFormModal from "../components/dashboard/TransactionFormModal.jsx";
 import TransactionList from "../components/dashboard/TransactionList.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
-import Money from "../components/ui/Money.jsx";
 import InstallAppButton from "../components/ui/InstallAppButton.jsx";
 import { ghostButtonSm, primaryButtonSm } from "../components/ui/styles.js";
 import {
@@ -193,19 +193,13 @@ export default function DashboardPage({
           </div>
         ) : null}
 
-        <section aria-label="مجموع موجودی">
-          <p className="text-sm text-text/50">مجموع موجودی</p>
-          <Money
-            value={totalBalance}
-            className="mt-1 block text-4xl font-semibold tracking-tight sm:text-5xl"
-            unitClassName="text-base font-normal text-text/40"
-          />
-          {activeAccounts.length > 0 ? (
-            <p className="mt-2 text-xs text-text/40">
-              از {formatNumber(activeAccounts.length)} حساب
-            </p>
-          ) : null}
-        </section>
+        <BalanceOverview
+          total={totalBalance}
+          accounts={activeAccounts}
+          transactions={transactions}
+          loading={loading}
+          unavailable={Boolean(error) && accounts.length === 0}
+        />
 
         <section aria-labelledby="accounts-title">
           <div className="mb-3 flex items-center justify-between gap-3">
